@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Year Calendar</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4caf50">
+
+<style>
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #121212;
+  color: #fff;
+  margin: 0;
+  padding: 20px;
+}
+h1 { text-align:center; margin-bottom:20px; }
+a { color:#4caf50; text-decoration:none; display:block; margin-bottom:10px; font-weight:bold; }
+.year-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; }
+.month { background:#1e1e1e; border-radius:10px; overflow:hidden; padding:10px; }
+.month h2 { text-align:center; margin:10px 0; }
+table { width:100%; border-collapse:collapse; table-layout:fixed; }
+th { background:#2c2c2c; color:#ccc; padding:5px 0; font-weight:bold; font-size:12px; }
+td { border:1px solid #333; padding:3px 2px; vertical-align:top; height:60px; overflow:hidden; font-size:10px; }
+td strong { display:block; font-size:12px; margin-bottom:2px; }
+.green { background:#4caf50; color:#000; padding:1px 3px; border-radius:3px; margin-bottom:1px; display:block; font-size:9px; }
+.yellow { background:#ff9800; color:#000; padding:1px 3px; border-radius:3px; margin-bottom:1px; display:block; font-size:9px; }
+.red { background:#f44336; color:#fff; padding:1px 3px; border-radius:3px; margin-bottom:1px; display:block; font-size:9px; }
+td div { max-height:50px; overflow-y:auto; }
+</style>
+</head>
+<body>
+<h1>Year Calendar</h1>
+<a href="calendar.html">⬅ Back to Monthly Calendar</a>
+
+<div class="year-grid" id="yearCalendar"></div>
+
+<script>
+let tracks = JSON.parse(localStorage.getItem("tracks")) || [];
+const today = new Date();
+const todayStr = today.getFullYear() + '-' +
+                 String(today.getMonth()+1).padStart(2,'0') + '-' +
+                 String(today.getDate()).padStart(2,'0');
+const year = today.getFullYear();
+
+// --- Ensure today's history exists ---
+tracks.forEach(t=>{
+  if(!t.history) t.history={};
+  if(t.history[todayStr] === undefined){
+    t.history[todayStr] = t.type==="amount" ? t.value || 0 : t.done || false;
+  }
+});
+
+function daysInMonth(m,y){return new Date(y,m+1,0).getDate();}
+
+function buildYearCalendar(){
+  const container = document.getElementById("yearCalendar");
+  container.innerHTML = "";
+
+  for(let month=0; month<12; month++){
+    const monthDiv = document.createElement("div");
+    monthDiv.className = "month";
+
+    const monthName = new Date(year, month).toLocaleString('default', { month: 'long' });
+    const h2 = document.createElement("h2");
+    h2.innerText = monthName;
+    monthDiv.appendChild(h2);
+
+    const table = document.createElement("table");
+    const headerRow = document.createElement("tr");
+    ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(d=>{
+      const th=document.createElement("th");
+      th.innerText=d;
+      headerRow.appendChild(th);
+    });
+    table.appendChild(headerRow);
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const totalDays = daysInMonth(month, year);
+    let row = document.createElement("tr");
+    let dayCounter = 1;
+
+    for(let i=0;i<7;i++){
+      if(i<firstDay) row.appendChild(document.createElement("td"));
+      else {
+        const cell = document.createElement("td");
+        fillCell(cell, year, month, dayCounter);
+        row.appendChild(cell);
+        dayCounter++;
+      }
+    }
+    table.appendChild(row);
+
+    while(dayCounter <= totalDays){
+      row = document.createElement("tr");
+      for(let i=0;i<7;i++){
+        if(dayCounter <= totalDays){
+          const cell = document.createElement("td");
+          fillCell(cell, year, month, dayCounter);
+          row.appendChild(cell);
+          dayCounter++;
+        } else {
+          row.appendChild(document.createElement("td"));
+        }
+      }
+      table.appendChild(row);
+    }
+
+    monthDiv.appendChild(table);
+    container.appendChild(monthDiv);
+  }
+}
+
+function fillCell(cell, y, m, d){
+  const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  const cellDate = new Date(y, m, d);
+  if(cellDate > today) return;
+
+  const link = document.createElement("a");
+  link.href = `day.html?date=${dateStr}`;
+  link.style.color="inherit"; link.style.textDecoration="none";
+
+  const strong = document.createElement("strong");
+  strong.innerText = d;
+  link.appendChild(strong);
+
+  tracks.forEach(t=>{
+    if(!t.history) t.history={};
+    if(t.history[dateStr] === undefined){
+      t.history[dateStr] = t.type==="amount" ? 0 : t.done || false;
+    }
+    const val = t.history[dateStr];
+    const div = document.createElement("div");
+
+    if(t.type==="amount"){
+      if(val >= t.goal) div.className="green";
+      else if(val>0) div.className="yellow";
+      else div.className="red";
+      div.innerText = `${t.name}: ${val}/${t.goal}`;
+    } else {
+      const done = !!val;
+      div.className = done ? "green" : "red";
+      div.innerText = `${t.name}: ${done ? "✅" : "❌"}`;
+    }
+
+    link.appendChild(div);
+  });
+
+  cell.appendChild(link);
+}
+
+buildYearCalendar();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js')
+    .then(() => console.log('Service Worker Registered'));
+}
+</script>
+
+</body>
+</html>
