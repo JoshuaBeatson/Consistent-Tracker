@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4caf50">
+
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #0f0f0f;
+  color: white;
+  margin: 0;
+  padding: 20px;
+}
+h1 { text-align:center; }
+button {
+  background: #4caf50;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+input, select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+}
+.card {
+  background: #1e1e1e;
+  padding: 15px;
+  border-radius: 15px;
+  margin-top: 15px;
+}
+.progress {
+  background: #333;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.progress-bar {
+  background: #4caf50;
+  height: 10px;
+  width: 0%;
+}
+.small { font-size: 12px; opacity: 0.8; }
+a { color: #4caf50; text-decoration:none; display:block; margin-top:10px; }
+input[type=number] { margin-bottom:5px; }
+</style>
+</head>
+<body>
+
+<h1 id="trackerTitle">Tracker</h1>
+<a href="calendar.html">📅 View Calendar</a>
+
+<div class="card">
+  <h3>New Track</h3>
+  <input id="name" placeholder="Track Item (e.g. Water)" />
+
+  <select id="type" onchange="updateUnitState()">
+    <option value="amount">Amount (mL, g, etc.)</option>
+    <option value="boolean">Yes / No</option>
+  </select>
+
+  <select id="unit">
+    <option value="">Select unit</option>
+    <option value="ml">mL</option>
+    <option value="l">L</option>
+    <option value="g">g</option>
+    <option value="kg">kg</option>
+    <option value="oz">oz</option>
+  </select>
+
+  <div id="goal-container">
+    <input id="goal" placeholder="Daily goal (number)" type="number" />
+  </div>
+
+  <button onclick="addTrack()">Add</button>
+</div>
+
+<div id="tracks"></div>
+
+<script>
+// --- User name handling ---
+let userName = localStorage.getItem("userName") || prompt("Enter your name") || "Tracker";
+localStorage.setItem("userName", userName);
+document.getElementById("trackerTitle").innerText = `${userName}'s Tracker`;
+
+// --- Load tracks ---
+let tracks = JSON.parse(localStorage.getItem("tracks")) || [];
+
+// --- Today ---
+const today = new Date().toISOString().split('T')[0];
+
+// --- Ensure today's history exists ---
+tracks.forEach(t=>{
+  if(!t.history) t.history={};
+  if(t.history[today] === undefined){
+    t.history[today] = t.type==="amount" ? t.value || 0 : t.done || false;
+  }
+});
+
+// --- Save function ---
+function save() { localStorage.setItem("tracks", JSON.stringify(tracks)); }
+
+// --- Delete track ---
+function deleteTrack(id){
+  tracks = tracks.filter(t=>t.id!==id);
+  save();
+  render();
+}
+
+// --- Update unit visibility ---
+function updateUnitState(){
+  const typeEl = document.getElementById("type");
+  const unitEl = document.getElementById("unit");
+  const goalContainer = document.getElementById("goal-container");
+
+  if(typeEl.value==="boolean"){
+    unitEl.disabled = true;
+    unitEl.value = "";
+    goalContainer.style.display = "none";
+  } else {
+    unitEl.disabled = false;
+    goalContainer.style.display = "block";
+  }
+}
+
+// --- Add new track ---
+function addTrack(){
+  const nameEl = document.getElementById("name");
+  const typeEl = document.getElementById("type");
+  const unitEl = document.getElementById("unit");
+  const goalEl = document.getElementById("goal");
+
+  const name = nameEl.value.trim();
+  const type = typeEl.value;
+  if(!name) return alert("Enter a track name.");
+
+  if(type==="boolean"){
+    tracks.push({
+      id: Date.now(),
+      name,
+      type,
+      done:false,
+      history:{ [today]: false }
+    });
+    save(); render();
+    nameEl.value=""; return;
+  }
+
+  const unit = unitEl.value.toLowerCase();
+  const goalInput = Number(goalEl.value);
+  if(!unit) return alert("Select a unit.");
+  if(goalInput<=0) return alert("Enter goal > 0.");
+
+  let baseGoal = goalInput, baseUnit = unit;
+  if(unit==="l"){baseGoal = goalInput*1000; baseUnit="ml";}
+  if(unit==="kg"){baseGoal = goalInput*1000; baseUnit="g";}
+
+  tracks.push({
+    id: Date.now(),
+    name,
+    type,
+    goal: baseGoal,
+    unit: baseUnit,
+    displayUnit: unit,
+    value:0,
+    done:false,
+    history:{ [today]:0 }
+  });
+
+  save(); render();
+  nameEl.value=""; goalEl.value="";
+}
+
+// --- Update amount ---
+function updateAmount(id, amount){
+  const t = tracks.find(x=>x.id===id);
+  let valueToAdd = Number(amount);
+  if(t.displayUnit==="l") valueToAdd *=1000;
+  if(t.displayUnit==="kg") valueToAdd *=1000;
+  t.value += valueToAdd;
+  t.history[today] = t.value;
+  save(); render();
+}
+
+// --- Toggle yes/no ---
+function toggleDone(id){
+  const t = tracks.find(x=>x.id===id);
+  t.done = !t.done;
+  t.history[today] = t.done === true; // force boolean
+  save(); render();
+}
+
+// --- Render tracks ---
+function render(){
+  const container = document.getElementById("tracks");
+  container.innerHTML = "";
+  tracks.forEach(t=>{
+    const card = document.createElement("div");
+    card.className="card";
+    if(t.type==="amount"){
+      const percent = Math.min(100,(t.value/t.goal)*100);
+      card.innerHTML = `
+        <h3>${t.name}</h3>
+        <div class="small">${formatValue(t.value,t.displayUnit,t.unit)} / ${formatValue(t.goal,t.displayUnit,t.unit)}</div>
+        <div class="progress"><div class="progress-bar" style="width:${percent}%"></div></div>
+        <input type="number" id="amountInput-${t.id}" placeholder="+ amount" />
+        <button onclick="updateAmount(${t.id}, document.getElementById('amountInput-${t.id}').value); document.getElementById('amountInput-${t.id}').value='';">Enter</button>
+        <button style="margin-top:5px;background:red;" onclick="deleteTrack(${t.id})">Delete</button>
+      `;
+    } else {
+      card.innerHTML = `
+        <h3>${t.name}</h3>
+        <button onclick="toggleDone(${t.id})">${t.done?"✅ Done":"❌ Not Done"}</button>
+        <button style="margin-top:5px;background:red;" onclick="deleteTrack(${t.id})">Delete</button>
+      `;
+    }
+    container.appendChild(card);
+  });
+}
+
+function formatValue(value, displayUnit, baseUnit){
+  let display = value;
+  if(displayUnit==="l"||displayUnit==="kg") display = (value/1000).toFixed(2);
+  return `${display} ${displayUnit} (${value} ${baseUnit})`;
+}
+
+// --- Initial render ---
+render();
+updateUnitState();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js')
+    .then(() => console.log('Service Worker Registered'));
+}
+</script>
+
+</body>
+</html>
