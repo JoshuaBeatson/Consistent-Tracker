@@ -3,99 +3,110 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trackers for Day</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#4caf50">
+<title>Day View</title>
 
 <style>
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #121212;
-  color: #fff;
-  margin: 0;
-  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  background:#121212;
+  color:#fff;
+  margin:0;
+  padding:20px;
 }
-h1 { text-align:center; margin-bottom:20px; }
+h1 { text-align:center; }
+a {
+  color:#4caf50;
+  text-decoration:none;
+  display:block;
+  text-align:center;
+  margin-bottom:15px;
+}
 .card {
-  background: #1e1e1e;
-  padding: 15px;
-  border-radius: 15px;
-  margin-top: 15px;
+  background:#1e1e1e;
+  padding:15px;
+  border-radius:15px;
+  margin-top:15px;
 }
-.green { background: #4caf50; color:#000; padding:5px 8px; border-radius:5px; margin-bottom:5px; display:block; }
-.yellow { background: #ff9800; color:#000; padding:5px 8px; border-radius:5px; margin-bottom:5px; display:block; }
-.red { background: #f44336; color:#fff; padding:5px 8px; border-radius:5px; margin-bottom:5px; display:block; }
-a { color:#4caf50; text-decoration:none; display:block; margin-top:20px; text-align:center; }
+.green {
+  background:#4caf50;
+  color:#000;
+  padding:6px 10px;
+  border-radius:8px;
+  display:inline-block;
+}
+.yellow {
+  background:#ff9800;
+  color:#000;
+  padding:6px 10px;
+  border-radius:8px;
+  display:inline-block;
+}
+.red {
+  background:#f44336;
+  color:#fff;
+  padding:6px 10px;
+  border-radius:8px;
+  display:inline-block;
+}
 </style>
 </head>
 <body>
 
-<h1 id="dayTitle">Trackers</h1>
+<h1 id="title">Day</h1>
 <a href="calendar.html">⬅ Back to Calendar</a>
+
 <div id="dayTracks"></div>
 
 <script>
-// --- Get date from query ---
+// ---------- DATE ----------
 const params = new URLSearchParams(window.location.search);
 const dateStr = params.get("date");
 
-// --- Validate date ---
-if(!dateStr){
-  document.getElementById("dayTitle").innerText = "No date selected";
-}
+// ---------- LOCAL TODAY ----------
+const todayObj = new Date();
+const todayStr = todayObj.getFullYear() + "-" +
+                 String(todayObj.getMonth() + 1).padStart(2,"0") + "-" +
+                 String(todayObj.getDate()).padStart(2,"0");
 
-// --- Load tracks ---
-let tracks = JSON.parse(localStorage.getItem("tracks")) || [];
+// ---------- USER ----------
+const currentUserId = localStorage.getItem("currentUserId");
+const users = JSON.parse(localStorage.getItem("users")) || {};
+const tracks = users[currentUserId]?.tracks || [];
 
-// --- Ensure history for the selected date ---
-tracks.forEach(t=>{
-  if(!t.history) t.history = {};
-  if(t.history[dateStr] === undefined){
-    t.history[dateStr] = t.type==="amount" ? 0 : t.done || false;
-  }
-});
+document.getElementById("title").innerText =
+  dateStr ? `Trackers for ${dateStr}` : "No date selected";
 
 const container = document.getElementById("dayTracks");
-const todayDate = new Date();
-const todayStr = todayDate.getFullYear() + '-' +
-                 String(todayDate.getMonth()+1).padStart(2,'0') + '-' +
-                 String(todayDate.getDate()).padStart(2,'0');
 
-if(dateStr) {
-  document.getElementById("dayTitle").innerText = `Trackers for ${dateStr}`;
-}
+// ---------- RENDER ----------
+tracks.forEach(t => {
+  let value = t.history?.[dateStr]; // undefined if no entry
+  if (value === undefined && dateStr === todayStr && t.type === "boolean") value = false;
+  if (value === undefined) return; // skip days with no log
 
-tracks.forEach(t=>{
   const card = document.createElement("div");
   card.className = "card";
 
-  let val = t.history[dateStr];
+  if (t.type === "amount") {
+    let cls = "red";
+    if (value >= t.goal) cls = "green";
+    else if (value > 0) cls = "yellow";
 
-  // Future dates: show empty
-  if(dateStr > todayStr) {
-    card.innerHTML = `<strong>${t.name}</strong><div style="opacity:0.5">—</div>`;
-    container.appendChild(card);
-    return;
-  }
-
-  if(t.type === "amount"){
-    if(val >= t.goal) card.innerHTML = `<strong>${t.name}</strong><div class="green">${val}/${t.goal}</div>`;
-    else if(val > 0) card.innerHTML = `<strong>${t.name}</strong><div class="yellow">${val}/${t.goal}</div>`;
-    else card.innerHTML = `<strong>${t.name}</strong><div class="red">0/${t.goal}</div>`;
-  } else {
-    // boolean trackers: treat any truthy value as done
-    if(val) card.innerHTML = `<strong>${t.name}</strong><div class="green">✅ Completed</div>`;
-    else card.innerHTML = `<strong>${t.name}</strong><div class="red">❌ Not Done</div>`;
+    card.innerHTML = `
+      <strong>${t.name}</strong><br><br>
+      <span class="${cls}">${value} / ${t.goal}</span>
+    `;
+  } else { // boolean
+    card.innerHTML = `
+      <strong>${t.name}</strong><br><br>
+      <span class="${value ? "green" : "red"}">
+        ${value ? "✅ Completed" : "❌ Not Done"}
+      </span>
+    `;
   }
 
   container.appendChild(card);
 });
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js')
-    .then(() => console.log('Service Worker Registered'));
-}
 </script>
 
 </body>

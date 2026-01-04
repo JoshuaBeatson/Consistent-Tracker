@@ -4,8 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Tracker</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#4caf50">
 
 <style>
 body {
@@ -15,16 +13,23 @@ body {
   margin: 0;
   padding: 20px;
 }
-h1 { text-align:center; }
-button {
-  background: #4caf50;
-  border: none;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
+h1 { text-align:center; margin-bottom:20px; }
+a {
+  color: #4caf50;
+  text-decoration:none;
+  display:block;
+  text-align:center;
+  margin-bottom:20px;
 }
-input, select {
+
+/* Add Track section */
+#newTrackCard {
+  background: #1e1e1e;
+  padding: 15px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+}
+#newTrackCard input, #newTrackCard select {
   width: 100%;
   padding: 10px;
   margin-top: 6px;
@@ -32,26 +37,122 @@ input, select {
   border: none;
   font-size: 14px;
 }
+#newTrackCard button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 10px;
+  font-size: 14px;
+  background: #4caf50;
+  border: none;
+  cursor: pointer;
+}
+
+/* Tracks grid - 3x3 */
+#tracks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* Individual tile */
 .card {
   background: #1e1e1e;
+  border-radius: 20px;
+  border: 2px solid #4caf50;
   padding: 15px;
-  border-radius: 15px;
-  margin-top: 15px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  text-align: center;
+  font-size: 16px;
+  transition: transform 0.2s;
 }
+.card:hover {
+  transform: scale(1.05);
+}
+
+.card h3 {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0;
+  text-align: center;
+  word-break: break-word;
+}
+
+/* Progress bar */
 .progress {
+  width: 90%;
   background: #333;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
+  height: 20px;
   margin-top: 8px;
 }
 .progress-bar {
   background: #4caf50;
-  height: 10px;
-  width: 0%;
+  height: 100%;
+  transition: width 0.3s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 14px;
+  color: #000;
 }
-.small { font-size: 12px; opacity: 0.8; }
-a { color: #4caf50; text-decoration:none; display:block; margin-top:10px; }
-input[type=number] { margin-bottom:5px; }
+
+/* Buttons inside tiles */
+.card button {
+  padding: 10px 15px;
+  border-radius: 12px;
+  font-size: 16px;
+  margin-top: 8px;
+  width: 80%;
+  cursor: pointer;
+  border: none;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+.card button.delete {
+  background: #f44336;
+  color: #fff;
+}
+.card button.delete:hover {
+  background: #d32f2f;
+}
+.card button:hover:not(.delete) {
+  background: #45a049;
+}
+
+/* Input inside tiles */
+.card input[type="number"] {
+  width: 80%;
+  padding: 8px;
+  border-radius: 10px;
+  border: none;
+  font-size: 16px;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* Boolean tracker button */
+.boolean-btn {
+  padding: 12px 15px;
+  width: 80%;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  margin-top: 8px;
+  text-align: center;
+}
+.boolean-btn.done { background: #4caf50; color: #000; }
+.boolean-btn.notdone { background: #f44336; color: #fff; }
+.boolean-btn:hover { opacity: 0.9; }
 </style>
 </head>
 <body>
@@ -59,12 +160,13 @@ input[type=number] { margin-bottom:5px; }
 <h1 id="trackerTitle">Tracker</h1>
 <a href="calendar.html">📅 View Calendar</a>
 
-<div class="card">
+<!-- Add Track Card -->
+<div id="newTrackCard">
   <h3>New Track</h3>
-  <input id="name" placeholder="Track Item (e.g. Water)" />
+  <input id="name" placeholder="Track Item (e.g. Creatine)" />
 
   <select id="type" onchange="updateUnitState()">
-    <option value="amount">Amount (mL, g, etc.)</option>
+    <option value="amount">Amount</option>
     <option value="boolean">Yes / No</option>
   </select>
 
@@ -74,95 +176,94 @@ input[type=number] { margin-bottom:5px; }
     <option value="l">L</option>
     <option value="g">g</option>
     <option value="kg">kg</option>
-    <option value="oz">oz</option>
   </select>
 
   <div id="goal-container">
-    <input id="goal" placeholder="Daily goal (number)" type="number" />
+    <input id="goal" placeholder="Daily goal" type="number" />
   </div>
 
   <button onclick="addTrack()">Add</button>
 </div>
 
+<!-- Tracks Grid -->
 <div id="tracks"></div>
 
 <script>
-// --- User name handling ---
-let userName = localStorage.getItem("userName") || prompt("Enter your name") || "Tracker";
-localStorage.setItem("userName", userName);
-document.getElementById("trackerTitle").innerText = `${userName}'s Tracker`;
+// ---------- USER & TRACKS ----------
+let currentUserId = localStorage.getItem("currentUserId");
+if (!currentUserId) {
+  currentUserId = "u_" + Date.now();
+  localStorage.setItem("currentUserId", currentUserId);
+}
 
-// --- Load tracks ---
-let tracks = JSON.parse(localStorage.getItem("tracks")) || [];
+let users = JSON.parse(localStorage.getItem("users")) || {};
 
-// --- Today ---
-const today = new Date().toISOString().split('T')[0];
+if (!users[currentUserId]) {
+  const name = prompt("Enter your name") || "Tracker";
+  users[currentUserId] = { name, tracks: [] };
+  localStorage.setItem("users", JSON.stringify(users));
+}
 
-// --- Ensure today's history exists ---
-tracks.forEach(t=>{
-  if(!t.history) t.history={};
-  if(t.history[today] === undefined){
-    t.history[today] = t.type==="amount" ? t.value || 0 : t.done || false;
+document.getElementById("trackerTitle").innerText =
+  `${users[currentUserId].name}'s Tracker`;
+
+let tracks = users[currentUserId].tracks || [];
+
+// ---------- LOCAL TODAY ----------
+const todayObj = new Date();
+const today = todayObj.getFullYear() + "-" +
+              String(todayObj.getMonth() + 1).padStart(2,"0") + "-" +
+              String(todayObj.getDate()).padStart(2,"0");
+
+// ---------- AUTO-RESET TODAY ----------
+tracks.forEach(t => {
+  if (!(today in t.history)) {
+    t.history[today] = t.type === "boolean" ? false : 0;
   }
 });
+save();
 
-// --- Save function ---
-function save() { localStorage.setItem("tracks", JSON.stringify(tracks)); }
-
-// --- Delete track ---
-function deleteTrack(id){
-  tracks = tracks.filter(t=>t.id!==id);
-  save();
-  render();
+// ---------- SAVE ----------
+function save() {
+  users[currentUserId].tracks = tracks;
+  localStorage.setItem("users", JSON.stringify(users));
 }
 
-// --- Update unit visibility ---
-function updateUnitState(){
-  const typeEl = document.getElementById("type");
-  const unitEl = document.getElementById("unit");
-  const goalContainer = document.getElementById("goal-container");
-
-  if(typeEl.value==="boolean"){
-    unitEl.disabled = true;
-    unitEl.value = "";
-    goalContainer.style.display = "none";
-  } else {
-    unitEl.disabled = false;
-    goalContainer.style.display = "block";
-  }
+// ---------- UI ----------
+function updateUnitState() {
+  const type = document.getElementById("type").value;
+  document.getElementById("unit").disabled = type === "boolean";
+  document.getElementById("goal-container").style.display =
+    type === "boolean" ? "none" : "block";
 }
 
-// --- Add new track ---
-function addTrack(){
-  const nameEl = document.getElementById("name");
-  const typeEl = document.getElementById("type");
-  const unitEl = document.getElementById("unit");
-  const goalEl = document.getElementById("goal");
+// ---------- ADD TRACK ----------
+function addTrack() {
+  const name = document.getElementById("name").value.trim();
+  const type = document.getElementById("type").value;
+  const unit = document.getElementById("unit").value;
+  const goal = Number(document.getElementById("goal").value);
 
-  const name = nameEl.value.trim();
-  const type = typeEl.value;
-  if(!name) return alert("Enter a track name.");
+  if (!name) return alert("Enter a name");
 
-  if(type==="boolean"){
+  if (type === "boolean") {
     tracks.push({
       id: Date.now(),
       name,
       type,
-      done:false,
-      history:{ [today]: false }
+      history: { [today]: false }
     });
-    save(); render();
-    nameEl.value=""; return;
+    save();
+    render();
+    return;
   }
 
-  const unit = unitEl.value.toLowerCase();
-  const goalInput = Number(goalEl.value);
-  if(!unit) return alert("Select a unit.");
-  if(goalInput<=0) return alert("Enter goal > 0.");
+  if (!unit || goal <= 0) return alert("Enter unit & goal");
 
-  let baseGoal = goalInput, baseUnit = unit;
-  if(unit==="l"){baseGoal = goalInput*1000; baseUnit="ml";}
-  if(unit==="kg"){baseGoal = goalInput*1000; baseUnit="g";}
+  let baseGoal = goal;
+  let baseUnit = unit;
+  if (unit === "l") { baseGoal *= 1000; baseUnit = "ml"; }
+  if (unit === "kg") { baseGoal *= 1000; baseUnit = "g"; }
 
   tracks.push({
     id: Date.now(),
@@ -171,77 +272,82 @@ function addTrack(){
     goal: baseGoal,
     unit: baseUnit,
     displayUnit: unit,
-    value:0,
-    done:false,
-    history:{ [today]:0 }
+    value: 0,
+    history: {}
   });
 
-  save(); render();
-  nameEl.value=""; goalEl.value="";
+  save();
+  render();
 }
 
-// --- Update amount ---
-function updateAmount(id, amount){
-  const t = tracks.find(x=>x.id===id);
-  let valueToAdd = Number(amount);
-  if(t.displayUnit==="l") valueToAdd *=1000;
-  if(t.displayUnit==="kg") valueToAdd *=1000;
-  t.value += valueToAdd;
+// ---------- ACTIONS ----------
+function updateAmount(id, amt) {
+  const t = tracks.find(x => x.id === id);
+  let add = Number(amt);
+  if (t.displayUnit === "l" || t.displayUnit === "kg") add *= 1000;
+  t.value += add;
   t.history[today] = t.value;
-  save(); render();
+  save();
+  render();
 }
 
-// --- Toggle yes/no ---
-function toggleDone(id){
-  const t = tracks.find(x=>x.id===id);
-  t.done = !t.done;
-  t.history[today] = t.done === true; // force boolean
-  save(); render();
+function toggleDone(id) {
+  const t = tracks.find(x => x.id === id);
+  const current = t.history[today];
+  t.history[today] = !current;
+  save();
+  render();
 }
 
-// --- Render tracks ---
-function render(){
+function deleteTrack(id) {
+  tracks = tracks.filter(t => t.id !== id);
+  save();
+  render();
+}
+
+// ---------- RENDER ----------
+function render() {
   const container = document.getElementById("tracks");
   container.innerHTML = "";
-  tracks.forEach(t=>{
+
+  tracks.forEach(t => {
     const card = document.createElement("div");
-    card.className="card";
-    if(t.type==="amount"){
-      const percent = Math.min(100,(t.value/t.goal)*100);
+    card.className = "card";
+
+    if (t.type === "amount") {
+      const value = t.history[today] ?? 0;
+      const percent = Math.min(100, (value / t.goal) * 100);
+
+      const displayValue = `${value} / ${t.goal} ${t.displayUnit}`;
+
       card.innerHTML = `
         <h3>${t.name}</h3>
-        <div class="small">${formatValue(t.value,t.displayUnit,t.unit)} / ${formatValue(t.goal,t.displayUnit,t.unit)}</div>
-        <div class="progress"><div class="progress-bar" style="width:${percent}%"></div></div>
-        <input type="number" id="amountInput-${t.id}" placeholder="+ amount" />
-        <button onclick="updateAmount(${t.id}, document.getElementById('amountInput-${t.id}').value); document.getElementById('amountInput-${t.id}').value='';">Enter</button>
-        <button style="margin-top:5px;background:red;" onclick="deleteTrack(${t.id})">Delete</button>
+        <div class="progress">
+          <div class="progress-bar" style="width:${percent}%">
+            ${displayValue}
+          </div>
+        </div>
+        <input type="number" id="a-${t.id}" placeholder="+ amount">
+        <button onclick="updateAmount(${t.id}, document.getElementById('a-${t.id}').value)">Enter</button>
+        <button class="delete" onclick="deleteTrack(${t.id})">Delete</button>
       `;
     } else {
+      const done = t.history[today] ?? false;
       card.innerHTML = `
         <h3>${t.name}</h3>
-        <button onclick="toggleDone(${t.id})">${t.done?"✅ Done":"❌ Not Done"}</button>
-        <button style="margin-top:5px;background:red;" onclick="deleteTrack(${t.id})">Delete</button>
+        <button class="boolean-btn ${done ? 'done' : 'notdone'}" onclick="toggleDone(${t.id})">
+          ${done ? '✅ Done' : '❌ Not Done'}
+        </button>
+        <button class="delete" onclick="deleteTrack(${t.id})">Delete</button>
       `;
     }
+
     container.appendChild(card);
   });
 }
 
-function formatValue(value, displayUnit, baseUnit){
-  let display = value;
-  if(displayUnit==="l"||displayUnit==="kg") display = (value/1000).toFixed(2);
-  return `${display} ${displayUnit} (${value} ${baseUnit})`;
-}
-
-// --- Initial render ---
 render();
 updateUnitState();
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/service-worker.js')
-    .then(() => console.log('Service Worker Registered'));
-}
 </script>
 
 </body>
