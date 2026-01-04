@@ -13,13 +13,29 @@ body {
   margin: 0;
   padding: 20px;
 }
-h1 { text-align:center; margin-bottom:20px; }
+
+h1 {
+  text-align: center;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.edit-name {
+  font-size: 14px;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.edit-name:hover { opacity: 1; }
+
 a {
   color: #4caf50;
-  text-decoration:none;
-  display:block;
-  text-align:center;
-  margin-bottom:20px;
+  text-decoration: none;
+  display: block;
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 /* Add Track section */
@@ -29,7 +45,8 @@ a {
   border-radius: 15px;
   margin-bottom: 20px;
 }
-#newTrackCard input, #newTrackCard select {
+#newTrackCard input,
+#newTrackCard select {
   width: 100%;
   padding: 10px;
   margin-top: 6px;
@@ -39,131 +56,184 @@ a {
 }
 #newTrackCard button {
   width: 100%;
-  padding: 10px;
-  margin-top: 10px;
-  border-radius: 10px;
-  font-size: 14px;
+  padding: 12px;
+  margin-top: 12px;
+  border-radius: 12px;
+  font-size: 15px;
   background: #4caf50;
   border: none;
   cursor: pointer;
+  font-weight: bold;
+}
+.nav-link {
+  display: inline-block;
+  margin: 0 auto 15px;
+  padding: 8px 14px;
+  border: 1px solid #ffffff;
+  border-radius: 10px;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 14px;
+  opacity: 0.9;
 }
 
-/* Tracks grid - 3x3 */
+.nav-link:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+
+.calendar-link:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Grid */
 #tracks {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
-  margin-top: 20px;
 }
 
-/* Individual tile */
+@media (max-width: 800px) {
+  #tracks {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 500px) {
+  #tracks {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Card */
 .card {
   background: #1e1e1e;
   border-radius: 20px;
   border: 2px solid #4caf50;
-  padding: 15px;
-  aspect-ratio: 1 / 1;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  justify-content: space-evenly;
-  align-items: center;
-  text-align: center;
-  font-size: 16px;
-  transition: transform 0.2s;
-}
-.card:hover {
-  transform: scale(1.05);
+  gap: 10px;
 }
 
 .card h3 {
-  font-size: 18px;
-  font-weight: bold;
   margin: 0;
+  font-size: 18px;
   text-align: center;
   word-break: break-word;
 }
 
-/* Progress bar */
+/* Progress */
+.progress-label {
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.85;
+}
+
 .progress {
-  width: 90%;
+  width: 100%;
   background: #333;
   border-radius: 12px;
+  height: 16px;
   overflow: hidden;
-  height: 20px;
-  margin-top: 8px;
 }
+
 .progress-bar {
-  background: #4caf50;
   height: 100%;
+  background: #4caf50;
   transition: width 0.3s;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-weight: bold;
-  font-size: 14px;
-  color: #000;
 }
 
-/* Buttons inside tiles */
-.card button {
-  padding: 10px 15px;
-  border-radius: 12px;
-  font-size: 16px;
-  margin-top: 8px;
-  width: 80%;
-  cursor: pointer;
-  border: none;
-  font-weight: bold;
-  transition: background 0.2s;
-}
-.card button.delete {
-  background: #f44336;
-  color: #fff;
-}
-.card button.delete:hover {
-  background: #d32f2f;
-}
-.card button:hover:not(.delete) {
-  background: #45a049;
-}
-
-/* Input inside tiles */
+/* Inputs */
 .card input[type="number"] {
-  width: 80%;
-  padding: 8px;
-  border-radius: 10px;
+  width: 96.5%;
+  padding: 10px;
+  border-radius: 12px;
   border: none;
-  font-size: 16px;
+  font-size: 15px;
   text-align: center;
-  margin-top: 8px;
 }
 
-/* Boolean tracker button */
-.boolean-btn {
-  padding: 12px 15px;
-  width: 80%;
+#dailySummary {
+  text-align: center;
+  margin: 8px auto 16px;
+  padding: 8px 14px;
+  width: fit-content;
   border-radius: 12px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+#dailySummary.good {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
+}
+
+#dailySummary.okay {
+  background: rgba(255, 152, 0, 0.15);
+  color: #ff9800;
+}
+
+#dailySummary.bad {
+  background: rgba(244, 67, 54, 0.15);
+  color: #f44336;
+}
+
+
+/* Buttons */
+.card button {
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 15px;
+  cursor: pointer;
+  border: none;
+  font-weight: bold;
+}
+
+.card button.primary {
+  background: #4caf50;
+}
+
+.card button.delete {
+  background: #2a2a2a;
+  color: #f44336;
+}
+
+.card button.delete:hover {
+  background: #3a3a3a;
+}
+
+/* Boolean */
+.boolean-btn {
+  padding: 14px;
+  border-radius: 14px;
   font-size: 16px;
   font-weight: bold;
   border: none;
   cursor: pointer;
-  margin-top: 8px;
-  text-align: center;
 }
 .boolean-btn.done { background: #4caf50; color: #000; }
 .boolean-btn.notdone { background: #f44336; color: #fff; }
-.boolean-btn:hover { opacity: 0.9; }
 </style>
 </head>
+
 <body>
 
-<h1 id="trackerTitle">Tracker</h1>
-<a href="calendar.html">📅 View Calendar</a>
+<h1>
+  <span id="trackerTitle"></span>
+  <span class="edit-name" onclick="editName()">Edit Name✏️</span>
+</h1>
+<div id="dailySummary"></div>
 
-<!-- Add Track Card -->
+<a href="calendar.html" class="nav-link">📅 View Calendar</a>
+
+
+
+<!-- Add Track -->
 <div id="newTrackCard">
   <h3>New Track</h3>
-  <input id="name" placeholder="Track Item (e.g. Creatine)" />
+  <input id="name" placeholder="Track name" />
 
   <select id="type" onchange="updateUnitState()">
     <option value="amount">Amount</option>
@@ -179,17 +249,16 @@ a {
   </select>
 
   <div id="goal-container">
-    <input id="goal" placeholder="Daily goal" type="number" />
+    <input id="goal" type="number" placeholder="Daily goal" />
   </div>
 
   <button onclick="addTrack()">Add</button>
 </div>
 
-<!-- Tracks Grid -->
 <div id="tracks"></div>
 
 <script>
-// ---------- USER & TRACKS ----------
+// ---------- USER ----------
 let currentUserId = localStorage.getItem("currentUserId");
 if (!currentUserId) {
   currentUserId = "u_" + Date.now();
@@ -201,21 +270,14 @@ let users = JSON.parse(localStorage.getItem("users")) || {};
 if (!users[currentUserId]) {
   const name = prompt("Enter your name") || "Tracker";
   users[currentUserId] = { name, tracks: [] };
-  localStorage.setItem("users", JSON.stringify(users));
 }
-
-document.getElementById("trackerTitle").innerText =
-  `${users[currentUserId].name}'s Tracker`;
 
 let tracks = users[currentUserId].tracks || [];
 
-// ---------- LOCAL TODAY ----------
-const todayObj = new Date();
-const today = todayObj.getFullYear() + "-" +
-              String(todayObj.getMonth() + 1).padStart(2,"0") + "-" +
-              String(todayObj.getDate()).padStart(2,"0");
+// ---------- TODAY ----------
+const d = new Date();
+const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 
-// ---------- AUTO-RESET TODAY ----------
 tracks.forEach(t => {
   if (!(today in t.history)) {
     t.history[today] = t.type === "boolean" ? false : 0;
@@ -227,6 +289,16 @@ save();
 function save() {
   users[currentUserId].tracks = tracks;
   localStorage.setItem("users", JSON.stringify(users));
+  document.getElementById("trackerTitle").innerText =
+    `${users[currentUserId].name}'s Tracker`;
+}
+
+// ---------- EDIT NAME ----------
+function editName() {
+  const name = prompt("Enter new name", users[currentUserId].name);
+  if (!name) return;
+  users[currentUserId].name = name.trim();
+  save();
 }
 
 // ---------- UI ----------
@@ -236,8 +308,30 @@ function updateUnitState() {
   document.getElementById("goal-container").style.display =
     type === "boolean" ? "none" : "block";
 }
+function updateDailySummary() {
+  let completed = 0;
+  let total = tracks.length;
 
-// ---------- ADD TRACK ----------
+  tracks.forEach(t => {
+    const value = t.history?.[today];
+
+    if (t.type === "boolean") {
+      if (value === true) completed++;
+    } else {
+      if (value >= t.goal) completed++;
+    }
+  });
+
+  const el = document.getElementById("dailySummary");
+  el.innerText = `Today: ${completed} / ${total} completed`;
+
+  el.className = "";
+  if (completed === total && total > 0) el.classList.add("good");
+  else if (completed > 0) el.classList.add("okay");
+  else el.classList.add("bad");
+}
+
+// ---------- ADD ----------
 function addTrack() {
   const name = document.getElementById("name").value.trim();
   const type = document.getElementById("type").value;
@@ -253,17 +347,15 @@ function addTrack() {
       type,
       history: { [today]: false }
     });
-    save();
-    render();
-    return;
+    save(); render(); return;
   }
 
   if (!unit || goal <= 0) return alert("Enter unit & goal");
 
   let baseGoal = goal;
   let baseUnit = unit;
-  if (unit === "l") { baseGoal *= 1000; baseUnit = "ml"; }
-  if (unit === "kg") { baseGoal *= 1000; baseUnit = "g"; }
+  if (unit === "l") { baseGoal *= 1000; baseUnit = "L"; }
+  if (unit === "kg") { baseGoal *= 1000; baseUnit = "kg"; }
 
   tracks.push({
     id: Date.now(),
@@ -272,37 +364,33 @@ function addTrack() {
     goal: baseGoal,
     unit: baseUnit,
     displayUnit: unit,
-    value: 0,
-    history: {}
+    history: { [today]: 0 }
   });
 
-  save();
-  render();
+  save(); render();
 }
 
 // ---------- ACTIONS ----------
 function updateAmount(id, amt) {
   const t = tracks.find(x => x.id === id);
   let add = Number(amt);
+  if (!add) return;
+
   if (t.displayUnit === "l" || t.displayUnit === "kg") add *= 1000;
-  t.value += add;
-  t.history[today] = t.value;
-  save();
-  render();
+
+  t.history[today] += add;
+  save(); render();
 }
 
 function toggleDone(id) {
   const t = tracks.find(x => x.id === id);
-  const current = t.history[today];
-  t.history[today] = !current;
-  save();
-  render();
+  t.history[today] = !t.history[today];
+  save(); render();
 }
 
 function deleteTrack(id) {
   tracks = tracks.filter(t => t.id !== id);
-  save();
-  render();
+  save(); render();
 }
 
 // ---------- RENDER ----------
@@ -315,27 +403,25 @@ function render() {
     card.className = "card";
 
     if (t.type === "amount") {
-      const value = t.history[today] ?? 0;
+      const value = t.history[today] || 0;
       const percent = Math.min(100, (value / t.goal) * 100);
-
-      const displayValue = `${value} / ${t.goal} ${t.displayUnit}`;
 
       card.innerHTML = `
         <h3>${t.name}</h3>
+        <div class="progress-label">${value} / ${t.goal} ${t.displayUnit}</div>
         <div class="progress">
-          <div class="progress-bar" style="width:${percent}%">
-            ${displayValue}
-          </div>
+          <div class="progress-bar" style="width:${percent}%"></div>
         </div>
-        <input type="number" id="a-${t.id}" placeholder="+ amount">
-        <button onclick="updateAmount(${t.id}, document.getElementById('a-${t.id}').value)">Enter</button>
+        <input type="number" id="a-${t.id}" placeholder="+ ${t.unit}">
+        <button class="primary" onclick="updateAmount(${t.id}, document.getElementById('a-${t.id}').value)">Add</button>
         <button class="delete" onclick="deleteTrack(${t.id})">Delete</button>
       `;
     } else {
-      const done = t.history[today] ?? false;
+      const done = t.history[today];
       card.innerHTML = `
         <h3>${t.name}</h3>
-        <button class="boolean-btn ${done ? 'done' : 'notdone'}" onclick="toggleDone(${t.id})">
+        <button class="boolean-btn ${done ? 'done' : 'notdone'}"
+          onclick="toggleDone(${t.id})">
           ${done ? '✅ Done' : '❌ Not Done'}
         </button>
         <button class="delete" onclick="deleteTrack(${t.id})">Delete</button>
@@ -344,8 +430,11 @@ function render() {
 
     container.appendChild(card);
   });
+  updateDailySummary();
+
 }
 
+save();
 render();
 updateUnitState();
 </script>
