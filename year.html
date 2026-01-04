@@ -102,13 +102,27 @@ td strong {
   display:block;
   font-size:9px;
 }
+.month-total {
+  text-align:center;
+  font-size:12px;
+  color:#4caf50;
+  font-weight:bold;
+  margin-top:5px;
+}
+.year-total {
+  text-align:center;
+  font-size:16px;
+  color:#4caf50;
+  font-weight:bold;
+  margin-bottom:15px;
+}
 </style>
 </head>
 <body>
 
 <h1>Year Calendar</h1>
 <a href="calendar.html" class="nav-link">⬅ Back to Monthly Calendar</a>
-
+<div id="yearTotal" class="year-total"></div>
 
 <div class="year-grid" id="yearGrid"></div>
 
@@ -135,6 +149,8 @@ function daysInMonth(m, y){
 function buildYear(){
   const container = document.getElementById("yearGrid");
   container.innerHTML = "";
+
+  let yearlyDistanceKm = 0;
 
   for (let month = 0; month < 12; month++) {
     const monthDiv = document.createElement("div");
@@ -176,8 +192,45 @@ function buildYear(){
     }
 
     monthDiv.appendChild(table);
+
+    // Compute monthly distance
+    let monthlyDistanceKm = 0;
+    tracks.forEach(t => {
+      if (t.type === "distance") {
+        for (let d = 1; d <= totalDays; d++) {
+          const dateStr = `${year}-${String(month + 1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+          const value = t.history?.[dateStr];
+          if (value) monthlyDistanceKm += value; // in km
+        }
+      }
+    });
+
+    // Show monthly total in user-preferred unit
+    tracks.forEach(t => {
+      if (t.type === "distance") {
+        const total = t.displayUnit === "miles" ? monthlyDistanceKm / 1.60934 : monthlyDistanceKm;
+        const rounded = Math.round(total * 100) / 100;
+        const div = document.createElement("div");
+        div.className = "month-total";
+        div.innerText = `Total distance: ${rounded} ${t.displayUnit}`;
+        monthDiv.appendChild(div);
+      }
+    });
+
+    // Add to yearly total in km
+    yearlyDistanceKm += monthlyDistanceKm;
+
     container.appendChild(monthDiv);
   }
+
+  // Show yearly total in first distance track unit (if exists)
+  tracks.forEach(t => {
+    if (t.type === "distance") {
+      const total = t.displayUnit === "miles" ? yearlyDistanceKm / 1.60934 : yearlyDistanceKm;
+      const rounded = Math.round(total * 100) / 100;
+      document.getElementById("yearTotal").innerText = `Total distance this year: ${rounded} ${t.displayUnit}`;
+    }
+  });
 }
 
 // ---------- BUILD CELL ----------
@@ -199,6 +252,11 @@ function buildCell(month, day){
       else if (value > 0) div.className = "yellow";
       else div.className = "red";
       div.innerText = t.name;
+    } else if (t.type === "distance") {
+      div.className = "green";
+      const displayValue = t.displayUnit === "miles" ? value / 1.60934 : value;
+      const rounded = Math.round(displayValue * 100) / 100;
+      div.innerText = `${t.name}: ${rounded} ${t.displayUnit}`;
     } else { // boolean
       div.className = value ? "green" : "red";
       div.innerText = t.name;

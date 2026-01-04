@@ -82,12 +82,6 @@ a {
   background: rgba(255, 255, 255, 0.08);
 }
 
-
-.calendar-link:hover {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.08);
-}
-
 /* Grid */
 #tracks {
   display: grid;
@@ -124,27 +118,6 @@ a {
   word-break: break-word;
 }
 
-/* Progress */
-.progress-label {
-  text-align: center;
-  font-size: 14px;
-  opacity: 0.85;
-}
-
-.progress {
-  width: 100%;
-  background: #333;
-  border-radius: 12px;
-  height: 16px;
-  overflow: hidden;
-}
-
-.progress-bar {
-  height: 100%;
-  background: #4caf50;
-  transition: width 0.3s;
-}
-
 /* Inputs */
 .card input[type="number"] {
   width: 96.5%;
@@ -179,7 +152,6 @@ a {
   background: rgba(244, 67, 54, 0.15);
   color: #f44336;
 }
-
 
 /* Buttons */
 .card button {
@@ -228,8 +200,6 @@ a {
 
 <a href="calendar.html" class="nav-link">📅 View Calendar</a>
 
-
-
 <!-- Add Track -->
 <div id="newTrackCard">
   <h3>New Track</h3>
@@ -238,15 +208,10 @@ a {
   <select id="type" onchange="updateUnitState()">
     <option value="amount">Amount</option>
     <option value="boolean">Yes / No</option>
+    <option value="distance">Distance</option>
   </select>
 
-  <select id="unit">
-    <option value="">Select unit</option>
-    <option value="ml">mL</option>
-    <option value="l">L</option>
-    <option value="g">g</option>
-    <option value="kg">kg</option>
-  </select>
+  <select id="unit"></select>
 
   <div id="goal-container">
     <input id="goal" type="number" placeholder="Daily goal" />
@@ -304,21 +269,45 @@ function editName() {
 // ---------- UI ----------
 function updateUnitState() {
   const type = document.getElementById("type").value;
-  document.getElementById("unit").disabled = type === "boolean";
-  document.getElementById("goal-container").style.display =
-    type === "boolean" ? "none" : "block";
+  const unitSelect = document.getElementById("unit");
+
+  if (type === "boolean") {
+    unitSelect.disabled = true;
+    unitSelect.innerHTML = "";
+    document.getElementById("goal-container").style.display = "none";
+  } else if (type === "amount") {
+    unitSelect.disabled = false;
+    unitSelect.innerHTML = `
+      <option value="">Select unit</option>
+      <option value="ml">mL</option>
+      <option value="l">L</option>
+      <option value="g">g</option>
+      <option value="kg">kg</option>
+    `;
+    document.getElementById("goal-container").style.display = "block";
+  } else if (type === "distance") {
+    unitSelect.disabled = false;
+    unitSelect.innerHTML = `
+      <option value="km">km</option>
+      <option value="miles">miles</option>
+    `;
+    document.getElementById("goal-container").style.display = "none";
+  }
 }
+
+// ---------- DAILY SUMMARY ----------
 function updateDailySummary() {
   let completed = 0;
   let total = tracks.length;
 
   tracks.forEach(t => {
     const value = t.history?.[today];
-
     if (t.type === "boolean") {
       if (value === true) completed++;
-    } else {
+    } else if (t.type === "amount") {
       if (value >= t.goal) completed++;
+    } else if (t.type === "distance") {
+      if (value > 0) completed++;
     }
   });
 
@@ -331,7 +320,7 @@ function updateDailySummary() {
   else el.classList.add("bad");
 }
 
-// ---------- ADD ----------
+// ---------- ADD TRACK ----------
 function addTrack() {
   const name = document.getElementById("name").value.trim();
   const type = document.getElementById("type").value;
@@ -350,6 +339,19 @@ function addTrack() {
     save(); render(); return;
   }
 
+  if (type === "distance") {
+    if (!unit) return alert("Select unit for distance");
+    tracks.push({
+      id: Date.now(),
+      name,
+      type,
+      displayUnit: unit,
+      history: { [today]: 0 }
+    });
+    save(); render(); return;
+  }
+
+  // amount type
   if (!unit || goal <= 0) return alert("Enter unit & goal");
 
   let baseGoal = goal;
@@ -376,9 +378,21 @@ function updateAmount(id, amt) {
   let add = Number(amt);
   if (!add) return;
 
-  if (t.displayUnit === "l" || t.displayUnit === "kg") add *= 1000;
+  if (t.type === "amount" && (t.displayUnit === "l" || t.displayUnit === "kg")) add *= 1000;
 
   t.history[today] += add;
+  save(); render();
+}
+
+function updateDistance(id, dist) {
+  const t = tracks.find(x => x.id === id);
+  let value = Number(dist);
+  if (!value) return;
+
+  // convert miles to km internally
+  if (t.displayUnit === "miles") value *= 1.60934;
+
+  t.history[today] = (t.history[today] || 0) + value;
   save(); render();
 }
 
@@ -416,7 +430,21 @@ function render() {
         <button class="primary" onclick="updateAmount(${t.id}, document.getElementById('a-${t.id}').value)">Add</button>
         <button class="delete" onclick="deleteTrack(${t.id})">Delete</button>
       `;
-    } else {
+    } else if (t.type === "distance") {
+      const value = t.history[today] || 0;
+      const displayValue = t.displayUnit === "miles" ? (value / 1.60934) : value;
+      const rounded = Math.round(displayValue * 100) / 100;
+
+      card.innerHTML = `
+        <h3>${t.name}</h3>
+        <div style="text-align:center; font-size:16px; margin-bottom:8px;">
+          ${rounded} ${t.displayUnit}
+        </div>
+        <input type="number" id="d-${t.id}" placeholder="+ ${t.displayUnit}">
+        <button class="primary" onclick="updateDistance(${t.id}, document.getElementById('d-${t.id}').value)">Add</button>
+        <button class="delete" onclick="deleteTrack(${t.id})">Delete</button>
+      `;
+    } else { // boolean
       const done = t.history[today];
       card.innerHTML = `
         <h3>${t.name}</h3>
@@ -430,8 +458,8 @@ function render() {
 
     container.appendChild(card);
   });
-  updateDailySummary();
 
+  updateDailySummary();
 }
 
 save();

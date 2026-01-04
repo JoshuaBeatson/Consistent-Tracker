@@ -73,7 +73,6 @@ a {
 <h1 id="title">Day</h1>
 <a href="calendar.html" class="nav-link">⬅ Back to Calendar</a>
 
-
 <div id="dayTracks"></div>
 
 <script>
@@ -114,6 +113,20 @@ tracks.forEach(t => {
     card.innerHTML = `
       <strong>${t.name}</strong><br><br>
       <span class="${cls}">${value} / ${t.goal}</span>
+    `;
+  } else if (t.type === "distance") {
+    let displayValue = value;
+    let displayUnit = t.displayUnit || "km";
+
+    if (displayUnit === "miles") displayValue /= 1.60934;
+
+    let cls = "red";
+    if (t.goal && value >= t.goal) cls = "green";
+    else if (value > 0) cls = "yellow";
+
+    card.innerHTML = `
+      <strong>${t.name}</strong><br><br>
+      <span class="${cls}">${displayValue.toFixed(2)} ${displayUnit}</span>
     `;
   } else { // boolean
     card.innerHTML = `

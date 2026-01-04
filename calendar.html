@@ -50,6 +50,7 @@ a {
   border-radius:10px;
   padding:5px;
   font-size:12px;
+  position: relative;
 }
 .day strong {
   display:block;
@@ -79,6 +80,14 @@ a {
   margin-bottom:2px;
   font-size:10px;
 }
+
+.month-total {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #4caf50;
+  font-weight: bold;
+}
 </style>
 </head>
 <body>
@@ -87,8 +96,8 @@ a {
 <a href="index.html" class="nav-link">⬅ Back to Tracker</a>
 <a href="year.html" class="nav-link">📆 Year View</a>
 
-
 <div class="calendar" id="calendar"></div>
+<div id="monthTotal" class="month-total"></div>
 
 <script>
 // ---------- USER ----------
@@ -114,6 +123,7 @@ function daysInMonth(m, y){
 function buildCalendar(){
   const cal = document.getElementById("calendar");
   cal.innerHTML = "";
+  let monthlyDistanceKm = 0; // sum in km for conversion
 
   const firstDay = new Date(year, month, 1).getDay();
   const totalDays = daysInMonth(month, year);
@@ -143,6 +153,15 @@ function buildCalendar(){
 
         div.className = cls;
         div.innerText = t.name;
+      } else if (t.type === "distance") {
+        div.className = "green";
+        // show value in user's unit
+        const displayValue = t.displayUnit === "miles" ? value / 1.60934 : value;
+        const rounded = Math.round(displayValue * 100) / 100;
+        div.innerText = `${t.name}: ${rounded} ${t.displayUnit}`;
+
+        // add to monthly total in km for consistency
+        monthlyDistanceKm += value;
       } else { // boolean
         div.className = value ? "green" : "red";
         div.innerText = t.name;
@@ -157,6 +176,17 @@ function buildCalendar(){
 
     cal.appendChild(cell);
   }
+
+  // display monthly total in user-preferred distance unit
+  let totalText = '';
+  tracks.forEach(t => {
+    if (t.type === "distance") {
+      const total = t.displayUnit === "miles" ? monthlyDistanceKm / 1.60934 : monthlyDistanceKm;
+      const rounded = Math.round(total * 100) / 100;
+      totalText = `Total distance this month: ${rounded} ${t.displayUnit}`;
+    }
+  });
+  document.getElementById("monthTotal").innerText = totalText;
 }
 
 buildCalendar();
